@@ -1,0 +1,238 @@
+// ============================================================
+// DAD (Drink and Drive) - Database Schema
+// ============================================================
+// This schema defines all tables for the DAD system.
+// Users can be: ADMIN, DRIVER, RIDER, or HOTEL.
+// Every non-admin user must be APPROVED by an admin before
+// they can use the system.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// USER - Base table for all account types
+// ------------------------------------------------------------
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  // Personal details
+  firstName     String   @default("")
+  lastName      String   @default("")
+  initials      String   @default("")
+  fullName      String   // Computed as: "initials firstName lastName" or similar
+  dob           DateTime?  // Date of birth
+  nic           String?   // National Identity Card number
+  phone         String
+  role          Role     @default(DRIVER) // ADMIN | DRIVER | RIDER | HOTEL
+  status        Status   @default(PENDING) // PENDING | APPROVED | REJECTED
+  // Temporary password fields
+  tempPassword  String?  // Auto-generated temp password shown to admin
+  mustChangePassword Boolean @default(false) // True for driver first-time login
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  driverProfile DriverProfile?
+  riderProfile  RiderProfile?
+  hotelProfile  HotelProfile?
+  customerProfile CustomerProfile?
+
+  ridesAsDriver Ride[]    @relation("RideDriver")
+  ridesAsRider  Ride[]    @relation("RideRider")
+
+  @@index([role])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// DRIVER PROFILE - Extra details for drivers
+// ------------------------------------------------------------
+model DriverProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  licenseNumber String   @unique // Driver's license number
+  // License category: LIGHT_WEIGHT, HEAVY, BOTH
+  licenseCategory String @default("LIGHT_WEIGHT")
+  // Expiry dates - if category is HEAVY or BOTH, show both
+  licenseLightExpiryDate DateTime?
+  licenseHeavyExpiryDate  DateTime?
+  licenseFrontImage String // Path to uploaded front-side license photo
+  licenseBackImage  String  // Path to uploaded back-side license photo
+  // Practical test
+  practicalTestPassed     Boolean?  // Whether the driver passed the practical test
+  practicalTestPassedDate DateTime? // When the driver passed the practical test
+  // Driver preparation
+  vehicleType   String // Preferred vehicle type: CAR, VAN, LORRY, BUS, BIKE, TUKTUK, SUV
+  preferredGear String // Preferred transmission: AUTO, MANUAL, BOTH
+  specialNote   String? // Special note from driver
+  address       String
+  city          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------
+// RIDER PROFILE - Extra details for riders (passengers)
+// ------------------------------------------------------------
+model RiderProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  // Rider identification
+  licenseNumber String? // Rider's license number
+  idNumber      String? // National ID card number
+  address   String
+  city      String
+  emergencyContactName  String
+  emergencyContactPhone String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------
+// CUSTOMER PROFILE - Vehicle owners who request rides
+// ------------------------------------------------------------
+model CustomerProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  location      String // Google map location
+  vehicleType   String // What vehicle they have
+  transmission  String // AUTO | MANUAL
+  vehicleNumber String // Vehicle registration number
+  specialNote   String? // Special note
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------
+// HOTEL PROFILE - Extra details for hotels/partners
+// ------------------------------------------------------------
+model HotelProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  hotelName     String
+  hotelLicenseNumber String @unique
+  address       String
+  city          String
+  hotelImage    String? // Path to uploaded hotel image
+  description   String?
+  contactPhone  String
+  contactEmail  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------------
+// RIDE - A ride assigned to a driver & rider
+// ------------------------------------------------------------
+// ------------------------------------------------------------
+// RATE TABLE - Pricing configuration (KM + waiting time)
+// ------------------------------------------------------------
+model RateTable {
+  id              String   @id @default(cuid())
+  // Base fare charged for every ride start
+  baseFare        Float    @default(100)
+  // KM-based pricing
+  perKmRate       Float    @default(50)    // LKR per KM (first tier)
+  kmTierLimit     Int      @default(10)    // KM limit for first tier
+  kmTier2Rate     Float    @default(60)    // LKR per KM after kmTierLimit
+  kmMaxRate       Float    @default(100)   // Max LKR per KM cap
+  // Waiting-time pricing
+  waitingRatePerMin Float  @default(20)    // LKR per waiting minute
+  freeWaitingMin    Int    @default(2)     // Free waiting minutes before charging
+  contactPhone      String @default("0763003678") // Customer support phone (Call Us)
+  updatedAt       DateTime @updatedAt
+}
+
+model Ride {
+  id          String      @id @default(cuid())
+  driverId    String? // References User (role: DRIVER) - null until admin assigns
+  riderId     String? // References User (role: RIDER) - null until admin assigns
+  customerId  String? // Reference to the customer who requested the ride
+  // General details
+  pickupLocation String // Pickup location (from Google Maps)
+  dropLocation   String // Drop location (from Google Maps)
+  // Coordinates for routing (from Google Maps)
+  pickupLatitude  Float?
+  pickupLongitude Float?
+  dropLatitude    Float?
+  dropLongitude   Float?
+  startTime   DateTime    // Scheduled start time
+  startedAt   DateTime?   // When the ride actually started
+  // Customer details (auto-filled from customer profile)
+  customerName   String? // Name of the customer
+  customerNumber String? // Customer phone number
+  vehicleType    String? // Vehicle type (text field)
+  transmission   String? // AUTO | MANUAL
+  specialNote String?
+  status      RideStatus  @default(PENDING_REQUEST) // PENDING_REQUEST | ASSIGNED | UPCOMING | ONGOING | COMPLETED
+  // Separate acceptance tracking for driver and rider
+  driverAccepted Boolean?  // Whether the driver accepted the ticket
+  riderAccepted  Boolean?  // Whether the rider accepted the ticket
+  // Cancellation tracking — who cancelled their ticket
+  driverCancelled Boolean? // Whether the driver cancelled
+  riderCancelled  Boolean? // Whether the rider cancelled
+  // Ride progress workflow state
+  rideStartedAt DateTime?   // When the driver pressed "Start Ride" first time
+  waitingSince   DateTime?  // When the driver pressed "Waiting" (timer start)
+  waitingTotal   Int         @default(0) // Total waiting time in seconds
+  waitingIntervals String?  // JSON array of waiting intervals [{start, end}, ...]
+  // Odometer readings (start = required before ride start, end = required before complete)
+  odoStart        Int?   // Odometer reading at ride start
+  odoEnd          Int?   // Odometer reading at ride end
+  odoStartImage   String? // Proof photo of start odometer (required)
+  odoEndImage     String? // Proof photo of end odometer (optional)
+  // Fare calculation (computed on ride completion from the Rate Table)
+  totalFare       Float?  // Total fare amount in LKR
+  fareBreakdown   String? // JSON breakdown: { baseFare, distanceKm, distanceCost, waitingMin, waitingCost, total }
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  completedAt DateTime?   // When the ride was completed
+
+  driver      User?       @relation("RideDriver", fields: [driverId], references: [id])
+  rider       User?       @relation("RideRider", fields: [riderId], references: [id])
+
+  @@index([status])
+  @@index([driverId])
+  @@index([riderId])
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+enum Role {
+  ADMIN
+  DRIVER
+  RIDER
+  HOTEL
+  CUSTOMER
+}
+
+enum Status {
+  PENDING   // Waiting for admin approval
+  APPROVED  // Approved by admin - can use the system
+  REJECTED  // Rejected by admin
+}
+
+enum RideStatus {
+  PENDING_REQUEST // Customer requested a ride - waiting for admin to assign driver/rider
+  ASSIGNED  // Driver & rider assigned - ticket sent, waiting for them to accept
+  UPCOMING  // Both accepted - scheduled
+  ONGOING   // Ride is active/in progress
+  COMPLETED // Ride has been completed
+}

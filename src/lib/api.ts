@@ -5,8 +5,9 @@
 // Automatically attaches the JWT token to every request.
 // ============================================================
 
-// Base URL - same origin in development
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+// Base URL - same origin in development (empty = use page's own origin)
+// This works on localhost AND ngrok/HTTPS (avoids mixed-content blocking).
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Get the token from localStorage (client-side only)
 export function getToken(): string | null {

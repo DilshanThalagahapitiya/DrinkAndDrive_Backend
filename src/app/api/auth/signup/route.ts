@@ -263,10 +263,12 @@ export async function POST(req: NextRequest) {
           mustChangePassword: mustChangePassword,
           customerProfile: {
             create: {
-              location: customerLocation,
-              vehicleType: customerVehicleType,
+              // All customer profile fields are optional at signup —
+              // completed later via the "Complete Profile" screen.
+              location: customerLocation || "",
+              vehicleType: customerVehicleType || "",
               transmission: customerTransmission || "AUTO",
-              vehicleNumber: customerVehicleNumber,
+              vehicleNumber: customerVehicleNumber || "",
               specialNote: customerSpecialNote || null,
             },
           },

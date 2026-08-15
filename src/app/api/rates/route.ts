@@ -29,13 +29,8 @@ async function getRateRow() {
   return row;
 }
 
-// GET — public for any authenticated user (dashboards show rate table)
+// GET — public (landing page + dashboards show rate table)
 export async function GET(req: NextRequest) {
-  const authUser = authenticateRequest(req);
-  if (!authUser) {
-    return errorResponse("Unauthorized. Please login first.", 401);
-  }
-
   try {
     const rate = await getRateRow();
     return successResponse({ rate }, "Rate table retrieved successfully");
@@ -71,6 +66,7 @@ export async function PATCH(req: NextRequest) {
         ...(kmMaxRate !== undefined ? { kmMaxRate: Number(kmMaxRate) } : {}),
         ...(waitingRatePerMin !== undefined ? { waitingRatePerMin: Number(waitingRatePerMin) } : {}),
         ...(freeWaitingMin !== undefined ? { freeWaitingMin: Number(freeWaitingMin) } : {}),
+        ...(contactPhone !== undefined ? { contactPhone: String(contactPhone) } : {}),
       },
     });
 

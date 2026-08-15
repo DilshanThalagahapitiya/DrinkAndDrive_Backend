@@ -1,18 +1,37 @@
 // ============================================================
-// Home Screen (Landing Page)
+// Landing Page
 // ============================================================
-// The main landing page for the DAD app.
-// Users can register as a Driver, Rider, or Hotel partner.
-// Also provides access to the Admin Portal.
+// The main public landing page for DAD.
+// - "Let's Hire" button → navigates to customer login (/login?role=customer)
+// - Shows the admin-updatable support phone number from /api/rates
+// - "or other logins" link → normal login (/login)
 // ============================================================
 
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [contactPhone, setContactPhone] = useState("0763003678");
+
+  // Fetch the support phone number from the rate table (public API)
+  useEffect(() => {
+    async function fetchPhone() {
+      try {
+        const res = await fetch("/api/rates");
+        const data = await res.json();
+        if (data?.data?.rate?.contactPhone) {
+          setContactPhone(data.data.rate.contactPhone);
+        }
+      } catch (_) {
+        // Fall back to default
+      }
+    }
+    fetchPhone();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-600 via-indigo-500 to-slate-50">
@@ -36,7 +55,6 @@ export default function Home() {
               <div className="w-24 h-10 bg-white/20 animate-pulse rounded-lg" />
             ) : user ? (
               <>
-                {/* If admin, show Dashboard link */}
                 {user.role === "ADMIN" && (
                   <Link
                     href="/admin"
@@ -45,7 +63,6 @@ export default function Home() {
                     Dashboard
                   </Link>
                 )}
-                {/* Show user status badge */}
                 <span className="px-3 py-2 text-white/80 text-sm bg-white/10 rounded-lg">
                   {user.fullName}
                 </span>
@@ -83,24 +100,23 @@ export default function Home() {
             DAD connects intoxicated drivers with verified safe drivers, riders,
             and partner hotels — so everyone gets home safely.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-4">
+            {/* LET'S HIRE button — primary CTA for customers */}
             <Link
-              href="/signup?role=driver"
-              className="px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition shadow-lg"
+              href="/login?role=customer"
+              className="px-10 py-4 bg-amber-500 text-white text-xl font-bold rounded-2xl hover:bg-amber-600 transition shadow-2xl shadow-amber-500/30 animate-pulse"
             >
-              Register as Driver
+              🚗 Let's Hire
             </Link>
+          </div>
+
+          {/* Or other logins */}
+          <div className="mt-6">
             <Link
-              href="/signup?role=rider"
-              className="px-6 py-3 bg-indigo-700 text-white font-semibold rounded-xl hover:bg-indigo-800 transition shadow-lg"
+              href="/login"
+              className="text-white/70 text-sm underline hover:text-white transition"
             >
-              Register as Rider
-            </Link>
-            <Link
-              href="/signup?role=hotel"
-              className="px-6 py-3 bg-transparent text-white border-2 border-white/50 font-semibold rounded-xl hover:bg-white/10 transition"
-            >
-              Partner Hotel
+              or other logins
             </Link>
           </div>
         </div>
@@ -121,8 +137,8 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold text-slate-900 mb-2">Register</h3>
             <p className="text-slate-600">
-              Create an account as a driver, rider, or hotel partner. Provide your
-              details and verify your identity.
+              Create an account as a driver, rider, hotel partner, or customer.
+              Provide your details and verify your identity.
             </p>
           </div>
 
@@ -149,6 +165,23 @@ export default function Home() {
               services — all through DAD.
             </p>
           </div>
+        </div>
+
+        {/* Contact Phone Section — admin-updatable */}
+        <div className="mt-12 bg-white rounded-2xl p-8 shadow-md text-center max-w-lg mx-auto">
+          <div className="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+            📞
+          </div>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">24/7 Support</h3>
+          <p className="text-slate-600 mb-4 text-sm">
+            Need help hiring a driver? Call us anytime.
+          </p>
+          <a
+            href={`tel:${contactPhone}`}
+            className="inline-block px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition text-lg"
+          >
+            {contactPhone}
+          </a>
         </div>
 
         {/* Admin Portal Link */}

@@ -11,6 +11,7 @@ interface Rate {
   kmMaxRate: number;
   waitingRatePerMin: number;
   freeWaitingMin: number;
+  contactPhone: string;
 }
 
 export default function RatesPage() {
@@ -123,6 +124,29 @@ export default function RatesPage() {
             </div>
           </div>
 
+          {/* Contact Phone Card */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              <h3 className="font-semibold text-slate-900">📞 Contact Phone</h3>
+            </div>
+            <div className="p-6">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
+                Customer Support Phone (shown on landing page & customer app)
+              </label>
+              <input
+                type="tel"
+                value={rate?.contactPhone ?? ""}
+                onChange={(e) => setRate((r) => r ? { ...r, contactPhone: e.target.value } : r)}
+                placeholder="0763003678"
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-xs text-slate-400 mt-2">
+                This number appears on the public landing page "Let's Hire" section and the customer mobile app's Call Us button.
+              </p>
+            </div>
+          </div>
+
           {/* Live Preview */}
           <div className="bg-indigo-50 rounded-xl p-6 border border-indigo-200">
             <h3 className="font-semibold text-indigo-900 mb-3">👁️ Live Rate Preview (shown on all dashboards)</h3>
@@ -132,6 +156,7 @@ export default function RatesPage() {
                 <p>• First {rate.kmTierLimit} km: <b>{rate.perKmRate} LKR/km</b></p>
                 <p>• After {rate.kmTierLimit} km: <b>{rate.kmTier2Rate} LKR/km</b> (max {rate.kmMaxRate} LKR/km)</p>
                 <p>• Waiting: first <b>{rate.freeWaitingMin} min FREE</b>, then <b>{rate.waitingRatePerMin} LKR/min</b></p>
+                <p>• 📞 Contact: <b>{rate.contactPhone || "0763003678"}</b></p>
               </div>
             )}
           </div>

@@ -19,18 +19,21 @@ import { useAuth } from "@/context/AuthContext";
 import { uploadFile } from "@/lib/api";
 
 // Role type options
-type Role = "DRIVER" | "RIDER" | "HOTEL";
+type Role = "DRIVER" | "RIDER" | "HOTEL" | "CUSTOMER";
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialRole = searchParams.get("role"); // "driver" | "rider" | "hotel"
+  const initialRole = searchParams.get("role"); // "driver" | "rider" | "hotel" | "customer"
 
   const { signup } = useAuth();
 
   // Selected role - default to "driver" if ?role=driver, else "rider"
   const [role, setRole] = useState<Role>(
-    initialRole === "driver" ? "DRIVER" : initialRole === "hotel" ? "HOTEL" : "RIDER"
+    initialRole === "driver" ? "DRIVER"
+      : initialRole === "hotel" ? "HOTEL"
+      : initialRole === "customer" ? "CUSTOMER"
+      : "RIDER"
   );
 
   // Common form state
@@ -62,6 +65,13 @@ function SignupForm() {
   const [hotelLicenseNumber, setHotelLicenseNumber] = useState("");
   const [hotelImage, setHotelImage] = useState("");
   const [description, setDescription] = useState("");
+
+  // Customer fields
+  const [customerLocation, setCustomerLocation] = useState("");
+  const [customerVehicleType, setCustomerVehicleType] = useState("CAR");
+  const [customerTransmission, setCustomerTransmission] = useState("AUTO");
+  const [customerVehicleNumber, setCustomerVehicleNumber] = useState("");
+  const [customerSpecialNote, setCustomerSpecialNote] = useState("");
 
   // UI state
   const [error, setError] = useState("");
@@ -135,6 +145,14 @@ function SignupForm() {
           emergencyContactName,
           emergencyContactPhone,
         });
+      } else if (role === "CUSTOMER") {
+        Object.assign(data, {
+          customerLocation,
+          customerVehicleType,
+          customerTransmission,
+          customerVehicleNumber,
+          customerSpecialNote,
+        });
       } else {
         // HOTEL
         Object.assign(data, {
@@ -182,8 +200,8 @@ function SignupForm() {
           )}
 
           {/* Role Selector */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
-            {(["DRIVER", "RIDER", "HOTEL"] as Role[]).map((r) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            {(["DRIVER", "RIDER", "CUSTOMER", "HOTEL"] as Role[]).map((r) => (
               <button
                 key={r}
                 type="button"
@@ -194,7 +212,7 @@ function SignupForm() {
                     : "bg-white text-slate-700 border-slate-300 hover:border-indigo-400"
                 }`}
               >
-                {r === "DRIVER" ? "🚗 Driver" : r === "RIDER" ? "🙋 Rider" : "🏨 Hotel"}
+                {r === "DRIVER" ? "🚗 Driver" : r === "RIDER" ? "🙋 Rider" : r === "CUSTOMER" ? "👤 Customer" : "🏨 Hotel"}
               </button>
             ))}
           </div>
@@ -489,6 +507,76 @@ function SignupForm() {
               </>
             )}
 
+            {/* ---- CUSTOMER FIELDS ---- */}
+            {role === "CUSTOMER" && (
+              <>
+                <h2 className="text-lg font-semibold text-slate-900 pt-4 border-t border-slate-200">
+                  Vehicle Details
+                </h2>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Location *</label>
+                    <input
+                      type="text"
+                      value={customerLocation}
+                      onChange={(e) => setCustomerLocation(e.target.value)}
+                      required
+                      placeholder="Google Maps location"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Number *</label>
+                    <input
+                      type="text"
+                      value={customerVehicleNumber}
+                      onChange={(e) => setCustomerVehicleNumber(e.target.value)}
+                      required
+                      placeholder="ABC-1234"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Type *</label>
+                    <select
+                      value={customerVehicleType}
+                      onChange={(e) => setCustomerVehicleType(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="CAR">🚗 Car</option>
+                      <option value="VAN">🚐 Van</option>
+                      <option value="SUV">🚙 SUV</option>
+                      <option value="LORRY">🚛 Lorry</option>
+                      <option value="TUKTUK">🛺 Three Wheeler</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Transmission *</label>
+                    <select
+                      value={customerTransmission}
+                      onChange={(e) => setCustomerTransmission(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="AUTO">⚙️ Auto</option>
+                      <option value="MANUAL">⚙️ Manual</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Special Note</label>
+                  <textarea
+                    value={customerSpecialNote}
+                    onChange={(e) => setCustomerSpecialNote(e.target.value)}
+                    rows={3}
+                    placeholder="e.g. Driver must have experience with this vehicle"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </>
+            )}
+
             {/* ---- HOTEL FIELDS ---- */}
             {role === "HOTEL" && (
               <>
@@ -569,7 +657,7 @@ function SignupForm() {
             >
               {loading
                 ? "Creating Account..."
-                : `Register as ${role === "DRIVER" ? "Driver" : role === "RIDER" ? "Rider" : "Hotel Partner"}`}
+                : `Register as ${role === "DRIVER" ? "Driver" : role === "RIDER" ? "Rider" : role === "CUSTOMER" ? "Customer" : "Hotel Partner"}`}
             </button>
           </form>
 

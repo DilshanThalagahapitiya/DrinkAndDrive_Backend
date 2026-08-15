@@ -18,6 +18,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect"); // e.g. "admin"
+  const role = searchParams.get("role"); // e.g. "customer"
 
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -60,8 +61,12 @@ function LoginForm() {
           <div className="w-16 h-16 bg-white rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-lg">
             <span className="text-indigo-600 font-bold text-3xl">D</span>
           </div>
-          <h1 className="text-white text-2xl font-bold">Welcome Back</h1>
-          <p className="text-white/70 text-sm mt-1">Login to DAD Safety System</p>
+          <h1 className="text-white text-2xl font-bold">
+            {role === "customer" ? "Hire a Driver" : "Welcome Back"}
+          </h1>
+          <p className="text-white/70 text-sm mt-1">
+            {role === "customer" ? "Login to hire a safe driver" : "Login to DAD Safety System"}
+          </p>
         </div>
 
         {/* Login Card */}
@@ -120,7 +125,10 @@ function LoginForm() {
           {/* Link to signup */}
           <p className="text-center text-sm text-slate-600 mt-6">
             Don't have an account?{" "}
-            <Link href="/signup" className="text-indigo-600 font-medium hover:underline">
+            <Link
+              href={role === "customer" ? "/signup?role=customer" : "/signup"}
+              className="text-indigo-600 font-medium hover:underline"
+            >
               Register here
             </Link>
           </p>
